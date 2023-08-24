@@ -56,7 +56,6 @@
 				15D411363704732707CF30D4 /* Pods-MapApp.debug.xcconfig */,
 				81D3BD99A5B8CB5DC1AA67F3 /* Pods-MapApp.release.xcconfig */,
 			);
-			name = Pods;
 			path = Pods;
 			sourceTree = "<group>";
 		};
@@ -425,7 +424,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 9A7Q9CH3UQ;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = MapApp/Info.plist;
+				INFOPLIST_FILE = MapApp/Resources/Info.plist;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIMainStoryboardFile = Main;
@@ -454,7 +453,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 9A7Q9CH3UQ;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = MapApp/Info.plist;
+				INFOPLIST_FILE = MapApp/Resources/Info.plist;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIMainStoryboardFile = Main;
