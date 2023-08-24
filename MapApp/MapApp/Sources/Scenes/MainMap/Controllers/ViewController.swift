@@ -12,6 +12,13 @@ import CoreLocation
 
 class ViewController: UIViewController {
 
+    var curentPointId: Int?
+    let arrayPoints = [
+        1:YMKPoint(latitude: 55.753, longitude: 37.620709),
+        2:YMKPoint(latitude: 55.757, longitude: 37.620709),
+        3:YMKPoint(latitude: 55.761, longitude: 37.620709)
+    ]
+
     let currentLocation = CLLocationManager()
     var currentLatitude: CLLocationDegrees = 55.753921
     var currentLongitude: CLLocationDegrees = 37.620709
@@ -62,7 +69,6 @@ class ViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
 
-
         currentLocation.requestWhenInUseAuthorization()
         currentLocation.delegate = self
         currentLocation.startUpdatingLocation()
@@ -106,7 +112,7 @@ class ViewController: UIViewController {
             animationType: YMKAnimation(type: YMKAnimationType.smooth, duration: 2),
             cameraCallback: nil)
 
-        addPlacemarkOnMap()
+        addTestPlacemarks()
     }
 
     @objc func zoom(sender: UIButton) {
@@ -116,45 +122,56 @@ class ViewController: UIViewController {
         mapView.mapWindow.map.move(with: position, animationType: YMKAnimation(type: YMKAnimationType.smooth, duration: 0.5), cameraCallback: nil)
     }
     @objc func getMyLocation(sender: UIButton) {
+        let myPoint = YMKPoint(latitude: currentLatitude, longitude: currentLongitude)
         mapView.mapWindow.map.move(
-            with: YMKCameraPosition.init(target: YMKPoint(latitude: currentLatitude, longitude: currentLongitude), zoom: 15, azimuth: 0, tilt: 0),
+            with: YMKCameraPosition.init(target: myPoint, zoom: 15, azimuth: 0, tilt: 0),
             animationType: YMKAnimation(type: YMKAnimationType.smooth, duration: 4),
             cameraCallback: nil)
+
+        addPlacemark(point: myPoint, image: UIImage(named: "my_tracker")!)
     }
     @objc func nextTracker(sender: UIButton) {
-
+        if let id = curentPointId {
+            if id < arrayPoints.count {
+                let placemark: YMKPlacemarkMapObject = mapView.mapWindow.map.mapObjects.addPlacemark(with: arrayPoints[id + 1]!)
+                self.focusOnPlacemark(placemark)
+                curentPointId = id + 1
+            } else {
+                let placemark: YMKPlacemarkMapObject = mapView.mapWindow.map.mapObjects.addPlacemark(with: arrayPoints[1]!)
+                self.focusOnPlacemark(placemark)
+                curentPointId = 1
+            }
+        }
+        else {
+            let placemark: YMKPlacemarkMapObject = mapView.mapWindow.map.mapObjects.addPlacemark(with: arrayPoints[1]!)
+            self.focusOnPlacemark(placemark)
+            curentPointId = 1
+        }
     }
 
-    func addPlacemarkOnMap() {
-        let arrayPoints = [
-            YMKPoint(latitude: 55.753, longitude: 37.620709),
-            YMKPoint(latitude: 55.757, longitude: 37.620709),
-            YMKPoint(latitude: 55.761, longitude: 37.620709)
-        ]
-        arrayPoints.forEach { point in
-            let viewPlacemark: YMKPlacemarkMapObject = mapView.mapWindow.map.mapObjects.addPlacemark(with: point)
+    func addPlacemark(point: YMKPoint, image: UIImage) {
+        let viewPlacemark: YMKPlacemarkMapObject = mapView.mapWindow.map.mapObjects.addPlacemark(with: point)
+        viewPlacemark.setIconWith(
+            image.resized(to: CGSize(width: 50, height: 50))
+        )
+        viewPlacemark.addTapListener(with: self)
+    }
 
-            viewPlacemark.setIconWith(
-                UIImage(named: "tracker")!,
-                style: YMKIconStyle(
-                    anchor: CGPoint(x: 0.5, y: 0.5) as NSValue,
-                    rotationType: YMKRotationType.rotate.rawValue as NSNumber,
-                    zIndex: 0,
-                    flat: true,
-                    visible: true,
-                    scale: 0.2,
-                    tappableArea: nil
-                )
-            )
-            viewPlacemark.addTapListener(with: self)
+    func mergeImages(imageView: UIImageView) -> UIImage? {
+        UIGraphicsBeginImageContextWithOptions(imageView.frame.size, false, 0.0)
+        imageView.superview!.layer.render(in: UIGraphicsGetCurrentContext()!)
+        let image = UIGraphicsGetImageFromCurrentImageContext()
+        UIGraphicsEndImageContext()
+        return image
+    }
+
+    func addTestPlacemarks() {
+        arrayPoints.forEach { index, point in
+            addPlacemark(point: point, image: UIImage(named: "tracker")!.mergeWith(topImage: UIImage(named: "photo\(index)")!))
         }
     }
     func details() {
-        mapView.addSubview(im)
-        im.snp.makeConstraints { make in
-            make.centerX.equalToSuperview()
-            make.bottom.equalToSuperview().offset(-50)
-        }
+
     }
 }
 
@@ -164,6 +181,7 @@ extension ViewController: YMKMapObjectTapListener {
             return false
         }
         self.focusOnPlacemark(placemark)
+
         return true
     }
 
@@ -199,6 +217,26 @@ extension ViewController: CLLocationManagerDelegate {
 
         if locations.first != nil {
             print("location:: \(locations[0])")
+        }
+    }
+}
+
+extension UIImage {
+    func mergeWith(topImage: UIImage) -> UIImage {
+        let bottomImage = self
+        UIGraphicsBeginImageContext(size)
+        let bottomImageAreaSize = CGRect(x: 0, y: 0, width: bottomImage.size.width, height: bottomImage.size.height)
+        bottomImage.draw(in: bottomImageAreaSize)
+        let topImageAreaSize = CGRect(x: 40, y: 25, width: bottomImage.size.width - 80, height: bottomImage.size.height - 80)
+        topImage.draw(in: topImageAreaSize, blendMode: .sourceAtop, alpha: 1.0)
+        let mergedImage = UIGraphicsGetImageFromCurrentImageContext()!
+        UIGraphicsEndImageContext()
+        return mergedImage
+    }
+
+    func resized(to size: CGSize) -> UIImage {
+        return UIGraphicsImageRenderer(size: size).image { _ in
+            draw(in: CGRect(origin: .zero, size: size))
         }
     }
 }

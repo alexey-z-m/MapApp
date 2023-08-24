@@ -126,6 +126,7 @@
 		BA0427D62A9755610023782A /* MainMap */ = {
 			isa = PBXGroup;
 			children = (
+				BA0427D82A9789D40023782A /* Views */,
 				BA0427D72A9755690023782A /* Controllers */,
 			);
 			path = MainMap;
@@ -137,6 +138,13 @@
 				BA0427C22A9754D70023782A /* ViewController.swift */,
 			);
 			path = Controllers;
+			sourceTree = "<group>";
+		};
+		BA0427D82A9789D40023782A /* Views */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Views;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
