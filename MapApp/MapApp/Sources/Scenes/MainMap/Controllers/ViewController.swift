@@ -12,6 +12,9 @@ import CoreLocation
 
 class ViewController: UIViewController {
 
+    let currentLocation = CLLocationManager()
+    var currentLatitude: CLLocationDegrees = 55.753921
+    var currentLongitude: CLLocationDegrees = 37.620709
     var curentPointId: Int?
     let arrayPoints = [
         1:YMKPoint(latitude: 55.753, longitude: 37.620709),
@@ -19,138 +22,91 @@ class ViewController: UIViewController {
         3:YMKPoint(latitude: 55.761, longitude: 37.620709)
     ]
 
-    let currentLocation = CLLocationManager()
-    var currentLatitude: CLLocationDegrees = 55.753921
-    var currentLongitude: CLLocationDegrees = 37.620709
-
-    lazy var zoomInButton: UIButton = {
-        let button = UIButton()
-        button.setImage(UIImage(named: "zoom_plus"), for: .normal)
-        button.tag = 1
-        button.addTarget(self, action: #selector(zoom), for: .touchUpInside)
-        return button
-    }()
-
-    lazy var zoomOutButton: UIButton = {
-        let button = UIButton()
-        button.setImage(UIImage(named: "zoom_minus"), for: .normal)
-        button.tag = 0
-        button.addTarget(self, action: #selector(zoom), for: .touchUpInside)
-        return button
-    }()
-
-    lazy var locationButton: UIButton = {
-        let button = UIButton()
-        button.setImage(UIImage(named: "my_location"), for: .normal)
-        button.tag = 0
-        button.addTarget(self, action: #selector(getMyLocation), for: .touchUpInside)
-        return button
-    }()
-
-    lazy var nextTrackerButton: UIButton = {
-        let button = UIButton()
-        button.setImage(UIImage(named: "next_tracker"), for: .normal)
-        button.tag = 0
-        button.addTarget(self, action: #selector(nextTracker), for: .touchUpInside)
-        return button
-    }()
-
-    let im: UIImageView = {
-        let image = UIImageView()
-        image.image = UIImage(systemName: "person")
-        return image
-    }()
-
-    lazy var mapView: YMKMapView = {
-        let map = YMKMapView()
-        return map
-    }()
+    lazy var bottomView = BottomView()
+    lazy var mapView = MapView()
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        setupHierarchy()
+        setupLayout()
+        mapView.zoomInButton.addTarget(self, action: #selector(zoom), for: .touchUpInside)
+        mapView.zoomOutButton.addTarget(self, action: #selector(zoom), for: .touchUpInside)
+        mapView.locationButton.addTarget(self, action: #selector(getMyLocation), for: .touchUpInside)
+        mapView.nextTrackerButton.addTarget(self, action: #selector(nextTracker), for: .touchUpInside)
+    }
+
+    func setupHierarchy() {
+        view.addSubview(mapView)
+        mapView.addSubview(bottomView)
+    }
+
+    func setupLayout() {
+        mapView.snp.makeConstraints { make in
+            make.edges.equalToSuperview()
+        }
+
+        bottomView.isHidden = true
+        bottomView.snp.makeConstraints { make in
+            make.leading.bottom.trailing.equalToSuperview()
+            make.height.equalTo(200)
+        }
+
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(handleTap(_:)))
+        tapGesture.cancelsTouchesInView = false
+        view.addGestureRecognizer(tapGesture)
 
         currentLocation.requestWhenInUseAuthorization()
         currentLocation.delegate = self
         currentLocation.startUpdatingLocation()
 
-        view.addSubview(mapView)
-        mapView.addSubview(zoomInButton)
-        mapView.addSubview(zoomOutButton)
-        mapView.addSubview(locationButton)
-        mapView.addSubview(nextTrackerButton)
-
-        mapView.snp.makeConstraints { make in
-            make.top.trailing.bottom.leading.equalToSuperview()
-        }
-
-        zoomInButton.snp.makeConstraints { make in
-            make.top.equalToSuperview().offset(100)
-            make.trailing.equalToSuperview().offset(-20)
-            make.width.height.equalTo(50)
-        }
-
-        zoomOutButton.snp.makeConstraints { make in
-            make.top.equalToSuperview().offset(160)
-            make.trailing.equalToSuperview().offset(-20)
-            make.width.height.equalTo(50)
-        }
-
-        locationButton.snp.makeConstraints { make in
-            make.top.equalToSuperview().offset(220)
-            make.trailing.equalToSuperview().offset(-20)
-            make.width.height.equalTo(50)
-        }
-
-        nextTrackerButton.snp.makeConstraints { make in
-            make.top.equalToSuperview().offset(280)
-            make.trailing.equalToSuperview().offset(-20)
-            make.width.height.equalTo(50)
-        }
-
-        mapView.mapWindow.map.move(
+        mapView.mapYMK.mapWindow.map.move(
             with: YMKCameraPosition.init(target: YMKPoint(latitude: 55.753921, longitude: 37.620709), zoom: 14, azimuth: 0, tilt: 0),
-            animationType: YMKAnimation(type: YMKAnimationType.smooth, duration: 2),
-            cameraCallback: nil)
+            animationType: YMKAnimation(type: YMKAnimationType.smooth, duration: 2))
 
         addTestPlacemarks()
     }
 
     @objc func zoom(sender: UIButton) {
         let zoomStep: Float = sender.tag == 0 ? -1 : 1
-        let center = mapView.mapWindow.map.cameraPosition.target
-        let position = YMKCameraPosition(target: center, zoom: mapView.mapWindow.map.cameraPosition.zoom + zoomStep, azimuth: 0, tilt: 0)
-        mapView.mapWindow.map.move(with: position, animationType: YMKAnimation(type: YMKAnimationType.smooth, duration: 0.5), cameraCallback: nil)
+        let center = mapView.mapYMK.mapWindow.map.cameraPosition.target
+        let position = YMKCameraPosition(target: center, zoom: mapView.mapYMK.mapWindow.map.cameraPosition.zoom + zoomStep, azimuth: 0, tilt: 0)
+        mapView.mapYMK.mapWindow.map.move(with: position, animationType: YMKAnimation(type: YMKAnimationType.smooth, duration: 0.5))
     }
+
     @objc func getMyLocation(sender: UIButton) {
         let myPoint = YMKPoint(latitude: currentLatitude, longitude: currentLongitude)
-        mapView.mapWindow.map.move(
+        mapView.mapYMK.mapWindow.map.move(
             with: YMKCameraPosition.init(target: myPoint, zoom: 15, azimuth: 0, tilt: 0),
-            animationType: YMKAnimation(type: YMKAnimationType.smooth, duration: 4),
-            cameraCallback: nil)
+            animationType: YMKAnimation(type: YMKAnimationType.smooth, duration: 4))
 
         addPlacemark(point: myPoint, image: UIImage(named: "my_tracker")!)
     }
+
     @objc func nextTracker(sender: UIButton) {
         if let id = curentPointId {
             if id < arrayPoints.count {
-                let placemark: YMKPlacemarkMapObject = mapView.mapWindow.map.mapObjects.addPlacemark(with: arrayPoints[id + 1]!)
-                self.focusOnPlacemark(placemark)
+                self.focusOnPoint(arrayPoints[id + 1]!)
                 curentPointId = id + 1
             } else {
-                let placemark: YMKPlacemarkMapObject = mapView.mapWindow.map.mapObjects.addPlacemark(with: arrayPoints[1]!)
-                self.focusOnPlacemark(placemark)
+                self.focusOnPoint(arrayPoints[1]!)
                 curentPointId = 1
             }
         }
         else {
-            let placemark: YMKPlacemarkMapObject = mapView.mapWindow.map.mapObjects.addPlacemark(with: arrayPoints[1]!)
-            self.focusOnPlacemark(placemark)
+            self.focusOnPoint(arrayPoints[1]!)
             curentPointId = 1
         }
     }
 
+    @objc func handleTap(_ gesture: UITapGestureRecognizer) {
+        let location = gesture.location(in: view)
+        if !bottomView.frame.contains(location) {
+            bottomView.isHidden = true
+        }
+    }
+
     func addPlacemark(point: YMKPoint, image: UIImage) {
-        let viewPlacemark: YMKPlacemarkMapObject = mapView.mapWindow.map.mapObjects.addPlacemark(with: point)
+        let viewPlacemark: YMKPlacemarkMapObject = mapView.mapYMK.mapWindow.map.mapObjects.addPlacemark(with: point)
         viewPlacemark.setIconWith(
             image.resized(to: CGSize(width: 50, height: 50))
         )
@@ -170,8 +126,11 @@ class ViewController: UIViewController {
             addPlacemark(point: point, image: UIImage(named: "tracker")!.mergeWith(topImage: UIImage(named: "photo\(index)")!))
         }
     }
+    
     func details() {
-
+        bottomView.isHidden = false
+        guard let id = curentPointId else { return }
+        bottomView.imagePhoto.image = UIImage(named: "photo\(id)")
     }
 }
 
@@ -180,17 +139,20 @@ extension ViewController: YMKMapObjectTapListener {
         guard let placemark = mapObject as? YMKPlacemarkMapObject else {
             return false
         }
-        self.focusOnPlacemark(placemark)
-
+        self.focusOnPoint(placemark.geometry)
         return true
     }
 
-    func focusOnPlacemark(_ placemark: YMKPlacemarkMapObject) {
-        mapView.mapWindow.map.move(
-            with: YMKCameraPosition(target: placemark.geometry, zoom: 15, azimuth: 0, tilt: 0),
-            animationType: YMKAnimation(type: YMKAnimationType.smooth, duration: 1),
-            cameraCallback: nil
+    func focusOnPoint(_ point: YMKPoint) {
+        curentPointId = arrayPoints.first(where: {
+            $0.value.latitude == point.latitude &&
+            $0.value.longitude == point.longitude
+        })?.key
+        mapView.mapYMK.mapWindow.map.move(
+            with: YMKCameraPosition(target: point, zoom: 15, azimuth: 0, tilt: 0),
+            animationType: YMKAnimation(type: YMKAnimationType.smooth, duration: 1)
         )
+        details()
     }
 }
 
